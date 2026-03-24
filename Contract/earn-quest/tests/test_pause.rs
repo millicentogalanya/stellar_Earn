@@ -1,6 +1,7 @@
 #![cfg(test)]
 
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, Symbol};
+use soroban_sdk::{Address, Env};
+use soroban_sdk::testutils::Address as _;
 
 // Note: Test integration tests would require proper setup with Soroban test harness
 // This file demonstrates the test structure and scenarios
@@ -12,7 +13,7 @@ mod pause_tests {
     /// Helper to setup test environment
     fn setup_env() -> (Env, Address) {
         let env = Env::default();
-        let admin = Address::random(&env);
+        let admin = Address::generate(&env);
         (env, admin)
     }
 
@@ -286,7 +287,6 @@ mod pause_tests {
 // Integration test scenarios
 #[cfg(test)]
 mod integration_scenarios {
-    use super::*;
 
     #[test]
     fn scenario_security_incident_response() {

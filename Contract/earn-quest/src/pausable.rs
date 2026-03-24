@@ -86,9 +86,26 @@ pub fn is_contract_paused(env: &Env) -> Result<bool, Error> {
 
 /// Require that contract is not paused
 pub fn require_not_paused(env: &Env) -> Result<(), Error> {
-    if is_contract_paused(env)? {
+    // If pause state is not initialized, allow operations
+    let pause_state = match get_pause_state(env) {
+        Ok(state) => state,
+        Err(Error::NotInitialized) => return Ok(()),
+        Err(e) => return Err(e),
+    };
+
+    // Check if timelock has passed
+    if !pause_state.is_paused {
+        return Ok(());
+    }
+
+    let current_time = env.ledger().timestamp();
+    let activation_time = pause_state.pause_timestamp + pause_state.timelock_delay;
+
+    // Paused only if timelock has passed
+    if current_time >= activation_time {
         return Err(Error::ContractPaused);
     }
+
     Ok(())
 }
 
