@@ -1,321 +1,243 @@
 #![cfg(test)]
 
-use soroban_sdk::testutils::Address as _;
-use soroban_sdk::{Address, Env};
+use earn_quest::{EarnQuestContract, EarnQuestContractClient, QuestStatus};
+use soroban_sdk::{
+    symbol_short,
+    testutils::{Address as _, Ledger as _},
+    token::StellarAssetClient,
+    Address, BytesN, Env, Symbol,
+};
 
-// Note: Test integration tests would require proper setup with Soroban test harness
-// This file demonstrates the test structure and scenarios
+struct TestContext<'a> {
+    env: Env,
+    client: EarnQuestContractClient<'a>,
+    admin: Address,
+    creator: Address,
+    verifier: Address,
+    token_address: Address,
+    token_admin_client: StellarAssetClient<'a>,
+}
 
-#[cfg(test)]
-mod pause_tests {
-    use super::*;
+fn setup<'a>() -> TestContext<'a> {
+    let env = Env::default();
+    env.mock_all_auths();
 
-    /// Helper to setup test environment
-    #[allow(dead_code)]
-    fn setup_env() -> (Env, Address) {
-        let env = Env::default();
-        let admin = Address::generate(&env);
-        (env, admin)
-    }
+    let contract_address = env.register_contract(None, EarnQuestContract);
+    let client = EarnQuestContractClient::new(&env, &contract_address);
+    let admin = Address::generate(&env);
+    let creator = Address::generate(&env);
+    let verifier = Address::generate(&env);
 
-    #[test]
-    fn test_pause_initialization() {
-        // Test that pause state can be initialized with timelock and multi-sig
-        // Scenario:
-        // 1. Admin initializes pause with 3600s timelock, 2 required signatures, 7200s grace period
-        // 2. Verify pause state is created with correct configuration
-        // 3. Verify initial pause state is not paused
-        //
-        // Expected: Pause state initialized successfully
-    }
+    client.initialize(&admin);
 
-    #[test]
-    fn test_pause_timelock_mechanism() {
-        // Test that pause requires waiting for timelock delay
-        // Scenario:
-        // 1. Initialize pause with 3600s timelock and 1 required signature
-        // 2. First signer requests pause with reason
-        // 3. Verify pause is not immediately active (timelock not expired)
-        // 4. Advance time by 3600+ seconds
-        // 5. Verify pause is now active
-        //
-        // Expected: Pause becomes active only after timelock expires
-    }
+    let token_admin = Address::generate(&env);
+    let token_address = env
+        .register_stellar_asset_contract_v2(token_admin)
+        .address();
+    let token_admin_client = StellarAssetClient::new(&env, &token_address);
 
-    #[test]
-    fn test_pause_multi_signature_requirement() {
-        // Test multi-sig requirement for pause activation
-        // Scenario:
-        // 1. Initialize pause with 2 required signatures
-        // 2. First signer requests pause
-        // 3. Verify pause is not active yet (only 1/2 signatures)
-        // 4. Second signer requests pause
-        // 5. Verify pause becomes active after timelock
-        //
-        // Expected: Pause requires all signatures before activation
-    }
-
-    #[test]
-    fn test_pause_blocks_operations() {
-        // Test that sensitive functions are blocked during pause
-        // Scenario:
-        // 1. Register a quest successfully (not paused)
-        // 2. Pause the contract
-        // 3. Try to register another quest
-        // 4. Try to submit proof
-        // 5. Try to approve submission
-        //
-        // Expected: All operations fail with ContractPaused error
-    }
-
-    #[test]
-    fn test_emergency_withdrawal_during_grace_period() {
-        // Test emergency withdrawal during grace period
-        // Scenario:
-        // 1. Create and fund a quest with escrow
-        // 2. Pause the contract
-        // 3. Try emergency withdrawal before grace period expires
-        // 4. Verify withdrawal succeeds
-        // 5. Advance time past grace period
-        // 6. Try emergency withdrawal again
-        //
-        // Expected: Withdrawal succeeds during grace period, fails after
-    }
-
-    #[test]
-    fn test_unpause_resumes_operations() {
-        // Test that unpause resumes normal contract operations
-        // Scenario:
-        // 1. Pause the contract
-        // 2. Verify contract is paused
-        // 3. Admin unpauses the contract
-        // 4. Try to register a quest
-        // 5. Verify quest registration succeeds
-        //
-        // Expected: Contract resumes normal operations after unpause
-    }
-
-    #[test]
-    fn test_cancel_pending_pause() {
-        // Test canceling a pending pause request
-        // Scenario:
-        // 1. Initialize pause with 2 required signatures
-        // 2. First signer requests pause
-        // 3. Admin cancels the pending pause request
-        // 4. Verify signers list is cleared
-        // 5. Try to activate pause again
-        //
-        // Expected: Pending pause request canceled, new request required
-    }
-
-    #[test]
-    fn test_duplicate_signer_prevention() {
-        // Test that same address can't sign twice
-        // Scenario:
-        // 1. Initialize pause with 2 required signatures
-        // 2. First signer requests pause
-        // 3. Same signer tries to request pause again
-        //
-        // Expected: Returns AlreadySigned error
-    }
-
-    #[test]
-    fn test_pause_with_reason() {
-        // Test pause with emergency reason
-        // Scenario:
-        // 1. Request pause with reason "security_vulnerability"
-        // 2. Get pause state
-        // 3. Verify reason is stored
-        // 4. Emit pause event
-        //
-        // Expected: Pause reason stored and emitted in event
-    }
-
-    #[test]
-    fn test_grace_period_countdown() {
-        // Test grace period timer countdown
-        // Scenario:
-        // 1. Pause contract with 7200s grace period
-        // 2. Get remaining grace period (should be ~7200s)
-        // 3. Advance time by 3600s
-        // 4. Get remaining grace period (should be ~3600s)
-        // 5. Advance time past grace period
-        // 6. Get remaining grace period (should be 0s)
-        //
-        // Expected: Grace period countdown accurate
-    }
-
-    #[test]
-    fn test_pause_configuration_update() {
-        // Test updating pause configuration
-        // Scenario:
-        // 1. Initialize pause with default settings
-        // 2. Update timelock to 7200s
-        // 3. Update required signatures to 3
-        // 4. Update grace period to 14400s
-        // 5. Verify all updates applied
-        //
-        // Expected: Configuration updated successfully
-    }
-
-    #[test]
-    fn test_pause_authorization_check() {
-        // Test that only authorized addresses can perform pause operations
-        // Scenario:
-        // 1. Unauthorized address tries to unpause
-        // 2. Initiate pause with authorized signer
-        // 3. Unauthorized address tries to cancel pause
-        // 4. Admin successfully unpause
-        //
-        // Expected: Unauthorized operations fail
-    }
-
-    #[test]
-    fn test_pause_event_emission() {
-        // Test that pause/unpause events are emitted correctly
-        // Scenario:
-        // 1. Request pause and verify pause event emitted
-        // 2. Unpause and verify unpause event emitted
-        // 3. Check event contains correct data (timestamp, reason, etc.)
-        //
-        // Expected: Events emitted with correct data
-    }
-
-    #[test]
-    fn test_emergency_withdrawal_event() {
-        // Test that emergency withdrawal emits proper event
-        // Scenario:
-        // 1. Perform emergency withdrawal
-        // 2. Verify event contains user, amount, quest_id, timestamp
-        //
-        // Expected: Emergency withdrawal event emitted correctly
-    }
-
-    #[test]
-    fn test_pause_with_active_quests() {
-        // Test pausing contract with active quests
-        // Scenario:
-        // 1. Create multiple active quests
-        // 2. Pause the contract
-        // 3. Verify existing quest data persists
-        // 4. Unpause and verify quest operations resume
-        // 5. Complete existing quest
-        //
-        // Expected: Pausing doesn't affect quest data
-    }
-
-    #[test]
-    fn test_pause_signers_tracking() {
-        // Test tracking of signers for pause activation
-        // Scenario:
-        // 1. Initialize with 3 required signatures
-        // 2. Get signer list (should be empty)
-        // 3. First signer requests pause
-        // 4. Get signer list (should contain 1 address)
-        // 5. Second signer requests pause
-        // 6. Get signer list (should contain 2 addresses)
-        // 7. Get remaining signatures (should be 1)
-        //
-        // Expected: Signer tracking accurate
-    }
-
-    #[test]
-    fn test_pause_state_not_initialized() {
-        // Test operations when pause state not initialized
-        // Scenario:
-        // 1. Contract initialized but pause not initialized
-        // 2. Try to check is_paused
-        // 3. Try to get pause state
-        // 4. Try to request pause
-        //
-        // Expected: NotInitialized error returned
-    }
-
-    #[test]
-    fn test_invalid_pause_state_transitions() {
-        // Test invalid pause state transitions
-        // Scenario:
-        // 1. Try to unpause when not paused
-        // 2. Try to cancel pause when already paused
-        //
-        // Expected: InvalidPauseState error returned
-    }
-
-    #[test]
-    fn test_emergency_window_closed() {
-        // Test emergency withdrawal when grace period expired
-        // Scenario:
-        // 1. Pause contract with 3600s grace period
-        // 2. Advance time past grace period
-        // 3. Try emergency withdrawal
-        //
-        // Expected: EmergencyWindowClosed error returned
-    }
-
-    #[test]
-    fn test_complete_emergency_scenario() {
-        // Test complete emergency pause and recovery workflow
-        // Scenario:
-        // 1. Initialize contract with admin
-        // 2. Create quest with escrow
-        // 3. Users submit proofs
-        // 4. Security vulnerability detected
-        // 5. Admin and 1 other authorized signature request pause
-        // 6. Verify pause activated after timelock
-        // 7. Users withdraw during grace period
-        // 8. Admin investigates and fixes vulnerability
-        // 9. Admin unpauses contract
-        // 10. Verify normal operations resume
-        //
-        // Expected: Complete emergency scenario handled correctly
-    }
-
-    #[test]
-    fn test_timelock_remaining_countdown() {
-        // Test timelock remaining timer
-        // Scenario:
-        // 1. Request pause with 1800s timelock
-        // 2. Get timelock remaining (should be ~1800s)
-        // 3. Advance time by 900s
-        // 4. Get timelock remaining (should be ~900s)
-        // 5. Advance time to past timelock
-        // 6. Get timelock remaining (should be 0)
-        //
-        // Expected: Timelock countdown accurate
+    TestContext {
+        env,
+        client,
+        admin,
+        creator,
+        verifier,
+        token_address,
+        token_admin_client,
     }
 }
 
-// Integration test scenarios
-#[cfg(test)]
-mod integration_scenarios {
+fn register_quest(ctx: &TestContext, quest_id: Symbol, reward: i128) {
+    let deadline = ctx.env.ledger().timestamp() + 86_400;
+    ctx.client.register_quest(
+        &quest_id,
+        &ctx.creator,
+        &ctx.token_address,
+        &reward,
+        &ctx.verifier,
+        &deadline,
+        &2,
+    );
+}
 
-    #[test]
-    fn scenario_security_incident_response() {
-        // Complete workflow:
-        // 1. Normal operations
-        // 2. Detect vulnerability during peak usage
-        // 3. Emergency pause activated (multi-sig + timelock)
-        // 4. Users emergency withdraw funds
-        // 5. Admin fixes vulnerability
-        // 6. System resumes operations
-        // 7. Audit trail via events
-    }
+fn fund_and_cancel_quest(ctx: &TestContext, quest_id: Symbol, reward: i128) {
+    let total = reward * 2;
+    register_quest(ctx, quest_id.clone(), reward);
+    ctx.token_admin_client.mint(&ctx.creator, &total);
+    ctx.client.deposit_escrow(&quest_id, &ctx.creator, &total);
+    ctx.client.cancel_quest(&quest_id, &ctx.creator);
+}
 
-    #[test]
-    fn scenario_false_alarm_handling() {
-        // Scenario where pause is requested but then cancelled:
-        // 1. False alarm triggers pause request
-        // 2. Admin verifies vulnerability doesn't exist
-        // 3. Cancel pause request before activation
-        // 4. Reset and continue normal operations
-    }
+#[test]
+fn test_pause_initialization_sets_expected_configuration() {
+    let ctx = setup();
 
-    #[test]
-    fn scenario_multiple_concurrent_pauses() {
-        // Scenario with rapid pause/unpause:
-        // 1. Initial pause activated
-        // 2. Unpause and resume
-        // 3. Another issue detected, pause again
-        // 4. Verify state consistency throughout
-    }
+    ctx.client.initialize_pause(&ctx.admin, &300, &2, &3_600);
+
+    let state = ctx.client.get_pause_state();
+    assert!(!state.is_paused);
+    assert_eq!(state.timelock_delay, 300);
+    assert_eq!(state.required_signatures, 2);
+    assert_eq!(state.grace_period, 3_600);
+}
+
+#[test]
+fn test_pause_requires_signatures_and_timelock() {
+    let ctx = setup();
+    let signer_one = Address::generate(&ctx.env);
+    let signer_two = Address::generate(&ctx.env);
+
+    ctx.client.initialize_pause(&ctx.admin, &60, &2, &300);
+    ctx.client
+        .request_pause(&signer_one, &Some(symbol_short!("ALERT")));
+
+    assert_eq!(ctx.client.get_remaining_pause_signatures(), 1);
+    assert!(!ctx.client.is_paused());
+
+    ctx.client.request_pause(&signer_two, &None);
+    assert!(!ctx.client.is_paused());
+    assert_eq!(ctx.client.get_pause_timelock_remaining(), 60);
+
+    ctx.env.ledger().set_timestamp(61);
+    assert!(ctx.client.is_paused());
+}
+
+#[test]
+fn test_duplicate_signer_is_rejected() {
+    let ctx = setup();
+    let signer = Address::generate(&ctx.env);
+
+    ctx.client.initialize_pause(&ctx.admin, &0, &2, &300);
+    ctx.client.request_pause(&signer, &None);
+
+    let result = ctx.client.try_request_pause(&signer, &None);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_pause_blocks_mutating_operations_after_activation() {
+    let ctx = setup();
+    let quest_id = symbol_short!("PAUS1");
+    let submitter = Address::generate(&ctx.env);
+    let proof_hash = BytesN::from_array(&ctx.env, &[7; 32]);
+
+    register_quest(&ctx, quest_id.clone(), 1_000);
+    ctx.client.initialize_pause(&ctx.admin, &0, &1, &300);
+    ctx.client
+        .request_pause(&Address::generate(&ctx.env), &Some(symbol_short!("PAUSE")));
+
+    assert!(ctx.client.is_paused());
+    assert!(ctx
+        .client
+        .try_register_quest(
+            &symbol_short!("PAUS2"),
+            &ctx.creator,
+            &ctx.token_address,
+            &1_000,
+            &ctx.verifier,
+            &(ctx.env.ledger().timestamp() + 100),
+            &2,
+        )
+        .is_err());
+    assert!(ctx
+        .client
+        .try_submit_proof(&quest_id, &submitter, &proof_hash)
+        .is_err());
+}
+
+#[test]
+fn test_unpause_resumes_operations() {
+    let ctx = setup();
+
+    ctx.client.initialize_pause(&ctx.admin, &0, &1, &300);
+    ctx.client
+        .request_pause(&Address::generate(&ctx.env), &None);
+    assert!(ctx.client.is_paused());
+
+    ctx.client.unpause_contract(&ctx.admin);
+    assert!(!ctx.client.is_paused());
+
+    register_quest(&ctx, symbol_short!("LIVE1"), 1_000);
+    let quest = ctx.client.get_quest(&symbol_short!("LIVE1"));
+    assert_eq!(quest.status, QuestStatus::Active);
+}
+
+#[test]
+fn test_cancel_pending_pause_clears_signers() {
+    let ctx = setup();
+    let signer = Address::generate(&ctx.env);
+
+    ctx.client.initialize_pause(&ctx.admin, &120, &2, &300);
+    ctx.client
+        .request_pause(&signer, &Some(symbol_short!("CHECK")));
+    assert_eq!(ctx.client.get_pause_signers().len(), 1);
+
+    ctx.client.cancel_pause_request(&ctx.admin);
+
+    assert_eq!(ctx.client.get_pause_signers().len(), 0);
+    assert_eq!(ctx.client.get_remaining_pause_signatures(), 2);
+}
+
+#[test]
+fn test_emergency_withdrawal_works_only_during_grace_period() {
+    let ctx = setup();
+    let quest_id = symbol_short!("EMERG");
+
+    fund_and_cancel_quest(&ctx, quest_id.clone(), 1_000);
+    ctx.client.initialize_pause(&ctx.admin, &0, &1, &60);
+    ctx.client
+        .request_pause(&Address::generate(&ctx.env), &Some(symbol_short!("RISK")));
+
+    let withdrawn = ctx.client.emergency_withdraw(&quest_id, &ctx.creator);
+    assert_eq!(withdrawn, 2_000);
+
+    ctx.client.unpause_contract(&ctx.admin);
+    fund_and_cancel_quest(&ctx, symbol_short!("EMER2"), 1_000);
+    ctx.client
+        .request_pause(&Address::generate(&ctx.env), &Some(symbol_short!("RISK2")));
+    ctx.env.ledger().set_timestamp(61);
+
+    let result = ctx
+        .client
+        .try_emergency_withdraw(&symbol_short!("EMER2"), &ctx.creator);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_pause_configuration_updates_require_admin() {
+    let ctx = setup();
+    let intruder = Address::generate(&ctx.env);
+
+    ctx.client.initialize_pause(&ctx.admin, &0, &1, &60);
+    assert!(ctx
+        .client
+        .try_update_pause_config(&intruder, &Some(10), &Some(2), &Some(120))
+        .is_err());
+
+    ctx.client
+        .update_pause_config(&ctx.admin, &Some(10), &Some(2), &Some(120));
+    let state = ctx.client.get_pause_state();
+    assert_eq!(state.timelock_delay, 10);
+    assert_eq!(state.required_signatures, 2);
+    assert_eq!(state.grace_period, 120);
+}
+
+#[test]
+fn test_timelock_and_grace_period_countdowns_are_reported() {
+    let ctx = setup();
+
+    ctx.client.initialize_pause(&ctx.admin, &100, &1, &250);
+    ctx.client
+        .request_pause(&Address::generate(&ctx.env), &Some(symbol_short!("TIME")));
+
+    assert_eq!(ctx.client.get_pause_timelock_remaining(), 100);
+    assert_eq!(ctx.client.get_grace_period_remaining(), 250);
+
+    ctx.env.ledger().set_timestamp(40);
+    assert_eq!(ctx.client.get_pause_timelock_remaining(), 60);
+    assert_eq!(ctx.client.get_grace_period_remaining(), 210);
+
+    ctx.env.ledger().set_timestamp(400);
+    assert_eq!(ctx.client.get_pause_timelock_remaining(), 0);
+    assert_eq!(ctx.client.get_grace_period_remaining(), 0);
 }

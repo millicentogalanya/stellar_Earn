@@ -105,3 +105,34 @@ fn test_upgrade_contract_entrypoint_authorization() {
     // Verify calling it with correct admin doesn't fail with Unauthorized (though it will fail with host error if hash is invalid)
     // We already tested authorization in test_upgrade_authorization
 }
+
+#[test]
+fn test_trigger_migration_without_initialization_fails() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let client =
+        EarnQuestContractClient::new(&env, &env.register_contract(None, EarnQuestContract));
+
+    let admin = Address::generate(&env);
+    let result = client.try_trigger_migration(&admin);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_rollback_updates_config_version() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let client =
+        EarnQuestContractClient::new(&env, &env.register_contract(None, EarnQuestContract));
+
+    let admin = Address::generate(&env);
+    client.initialize(&admin);
+
+    client.trigger_rollback(&admin, &0);
+    assert_eq!(client.get_version(), 0);
+    assert_eq!(client.get_config().version, 0);
+
+    client.trigger_migration(&admin);
+    assert_eq!(client.get_version(), 1);
+    assert_eq!(client.get_config().version, 1);
+}
