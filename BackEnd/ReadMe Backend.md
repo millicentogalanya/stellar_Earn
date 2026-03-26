@@ -469,6 +469,11 @@ Key entities include:
 - Submission: Tracks user submissions for quests
 - Notification: Handles user notifications
 - Payout: Manages reward distributions
+- ModerationItem / ModerationAppeal: Content moderation queue and appeals (see **Content moderation** below)
+
+### Content moderation
+
+Automated checks run when quests are created or updated (title + description). Optional external APIs can augment scoring (`MODERATION_EXTERNAL_API_URL`, `MODERATION_IMAGE_API_URL`). Moderators and admins use `GET /moderation/dashboard/pending` and related routes documented in Swagger under the `moderation` tag. Users may submit appeals via `POST /moderation/appeals`. Configure thresholds and blocklists via `.env` (see `.env.example`).
 
 ## Testing
 

@@ -17,8 +17,10 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { JobsModule } from './modules/jobs/jobs.module';
 import { EmailModule } from './modules/email/email.module';
 import { UsersModule } from './modules/users/users.module';
+import { ModerationModule } from './modules/moderation/moderation.module';
 
 import { dataSourceOptions } from './database/data-source';
+import moderationConfig from './config/moderation.config';
 
 import { LoggerModule } from './common/logger/logger.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
@@ -43,6 +45,7 @@ import { CsrfGuard } from './common/guards/csrf.guard';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      load: [moderationConfig],
     }),
     TypeOrmModule.forRoot({
       ...dataSourceOptions,
@@ -59,7 +62,7 @@ import { CsrfGuard } from './common/guards/csrf.guard';
     JobsModule,
     EmailModule,
     UsersModule,
-    EmailModule,
+    ModerationModule,
   ],
   controllers: [AppController],
   providers: [
