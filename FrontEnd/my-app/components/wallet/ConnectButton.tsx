@@ -24,6 +24,7 @@ const ArrowDownIcon = () => (
 
 export function ConnectButton() {
   const { isConnected, address, openModal, disconnect } = useWallet();
+  const { isAuthenticated, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

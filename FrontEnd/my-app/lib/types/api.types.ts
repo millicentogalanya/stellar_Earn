@@ -59,7 +59,7 @@ export interface ApiError extends Error {
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
-  expiresIn: number;
+  expiresIn?: number;
 }
 
 export interface ChallengeRequest {
@@ -119,6 +119,12 @@ export interface QuestResponse {
   currentParticipants?: number;
   requirements?: string[];
   tags?: string[];
+  creator?: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+  };
+  skills?: string[];
   createdAt: string;
   updatedAt: string;
 }

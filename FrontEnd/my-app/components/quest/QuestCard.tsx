@@ -12,8 +12,10 @@ interface QuestCardProps {
 
 function formatTimeRemaining(deadline?: string): string | null {
   if (!deadline) return null;
+  const deadlineDate = new Date(deadline);
+  if (isNaN(deadlineDate.getTime())) return null;
   const days = Math.ceil(
-    (new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    (deadlineDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   );
   if (days < 0) return 'Expired';
   if (days === 0) return 'Today';

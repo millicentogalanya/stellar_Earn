@@ -29,6 +29,7 @@ const STATUS_COLORS: Record<QuestStatus, string> = {
 
 function QuestRowSkeleton() {
   return (
+
     <tr className="border-b border-zinc-100 dark:border-zinc-800">
       <td className="py-4 pr-3">
         <div className="h-5 w-5 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
@@ -104,9 +105,12 @@ export function QuestManager({
         case 'reward':
           comparison = a.reward - b.reward;
           break;
-        case 'deadline':
-          comparison = new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+        case 'deadline': {
+          const timeA = a.deadline ? new Date(a.deadline).getTime() : 0;
+          const timeB = b.deadline ? new Date(b.deadline).getTime() : 0;
+          comparison = (isNaN(timeA) ? 0 : timeA) - (isNaN(timeB) ? 0 : timeB);
           break;
+        }
         case 'participants':
           comparison = a.currentParticipants - b.currentParticipants;
           break;
@@ -335,7 +339,7 @@ export function QuestManager({
                     {quest.currentParticipants}/{quest.maxParticipants}
                   </td>
                   <td className="py-4 pr-4 text-sm text-zinc-500 dark:text-zinc-400">
-                    {new Date(quest.deadline).toLocaleDateString()}
+                    {quest.deadline ? new Date(quest.deadline).toLocaleDateString() : 'No deadline'}
                   </td>
                   <td className="py-4 pr-4">
                     <div className="flex gap-2">

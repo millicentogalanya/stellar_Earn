@@ -4,19 +4,6 @@ import React, { createContext, useContext, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 
 interface WalletContextType {
-
-  connect:           (moduleId: string) => Promise<void>;
-  disconnect:        () => Promise<void>;
-  address:           string | null;
-  isConnected:       boolean;
-  isConnecting:      boolean;
-  selectedWalletId:  string | null;
-  openModal:         () => void;
-  closeModal:        () => void;
-  isModalOpen:       boolean;
-  supportedWallets:  { id: string; name: string; icon: string }[];
-  error:             string | null;
-    
   connect: (moduleId: string) => Promise<void>;
   disconnect: () => Promise<void>;
   address: string | null;
@@ -29,7 +16,6 @@ interface WalletContextType {
   supportedWallets: { id: string; name: string; icon: string }[];
   error: string | null;
   signMessage: (message: string) => Promise<string>;
-
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -149,8 +135,6 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
         supportedWallets,
 
         error: walletError,
-
-        error,
         signMessage,
 
       }}

@@ -149,7 +149,7 @@ export function ProfileHeader({
           )}
 
           <div className="mt-3 text-xs text-zinc-500">
-            Joined {new Date(profile.joinDate).toLocaleDateString()}
+            Joined {profile.joinDate ? new Date(profile.joinDate).toLocaleDateString() : 'N/A'}
           </div>
         </div>
       </div>

@@ -67,7 +67,9 @@ export const tokenManager = {
     if (!isClient()) return;
     localStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
     localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
-    localStorage.setItem(TOKEN_EXPIRES_IN_KEY, tokens.expiresIn.toString());
+    if (tokens.expiresIn !== undefined) {
+      localStorage.setItem(TOKEN_EXPIRES_IN_KEY, tokens.expiresIn.toString());
+    }
   },
 
   clearTokens(): void {
