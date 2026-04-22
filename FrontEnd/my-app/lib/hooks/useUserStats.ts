@@ -74,15 +74,15 @@ export function useStats() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user?.address) {
+    if (!user?.stellarAddress) {
       setIsLoading(false);
       return;
     }
-    fetchUserStats(user.address)
-      .then(setStats)
+    fetchUserStats(user.stellarAddress)
+      .then(data => setStats(data as any))
       .catch(err => setError(err.message))
       .finally(() => setIsLoading(false));
-  }, [user?.address]);
+  }, [user?.stellarAddress]);
 
   return { stats, isLoading, error };
 }
