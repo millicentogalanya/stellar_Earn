@@ -4,6 +4,9 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  IsInt,
+  Min,
+  Max,
 } from 'class-validator';
 import { WsChannel } from '../entities/ws-subscription.entity';
 
@@ -42,5 +45,8 @@ export class FetchHistoryDto {
   since?: string;
 
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
   limit?: number;
 }

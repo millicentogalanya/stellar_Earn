@@ -7,6 +7,7 @@ import {
   IsArray,
   ValidateNested,
   IsObject,
+  IsNumber,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -124,6 +125,7 @@ export class EmailWebhookEventDto {
   sg_message_id?: string;
 
   @IsOptional()
+  @IsNumber()
   timestamp?: number;
 
   @IsOptional()

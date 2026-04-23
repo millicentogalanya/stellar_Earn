@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { ValidationPipe, VersioningType, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   API_VERSION_CONFIG,
@@ -88,15 +88,13 @@ async function bootstrap() {
         transform: true,
         disableErrorMessages: false,
         exceptionFactory: (errors) => {
-          return new Error(
-            JSON.stringify({
-              message: 'Validation failed',
-              errors: errors.map((error) => ({
-                property: error.property,
-                constraints: error.constraints,
-              })),
-            }),
-          );
+          return new BadRequestException({
+            message: 'Validation failed',
+            errors: errors.map((error) => ({
+              property: error.property,
+              constraints: error.constraints,
+            })),
+          });
         },
       }),
     );

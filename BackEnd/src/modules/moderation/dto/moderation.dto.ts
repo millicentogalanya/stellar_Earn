@@ -7,7 +7,11 @@ import {
   IsUUID,
   MaxLength,
   IsIn,
+  IsInt,
+  Min,
+  Max,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ModerationAction } from '../entities/moderation-item.entity';
 import { AppealStatus } from '../entities/moderation-appeal.entity';
 
@@ -56,11 +60,18 @@ export class ResolveAppealDto {
 }
 
 export class ModerationDashboardQueryDto {
-  @ApiPropertyOptional({ default: 1 })
+  @ApiPropertyOptional({ default: 1, minimum: 1 })
   @IsOptional()
-  page?: number;
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  page?: number = 1;
 
-  @ApiPropertyOptional({ default: 20 })
+  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 100 })
   @IsOptional()
-  limit?: number;
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @Type(() => Number)
+  limit?: number = 20;
 }

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsObject, IsString, IsDateString, IsArray, IsUUID } from 'class-validator';
+import { IsEnum, IsOptional, IsObject, IsString, IsDateString, IsArray, IsUUID, IsInt, IsBoolean, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ReportType, ReportFormat, ReportStatus } from '../entities/analytics-report.entity';
 import { SnapshotType } from '../entities/analytics-snapshot.entity';
@@ -97,6 +97,10 @@ export class ReportQueryDto {
     default: 50,
   })
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  @Type(() => Number)
   limit?: number;
 
   @ApiProperty({
@@ -105,6 +109,9 @@ export class ReportQueryDto {
     default: 0,
   })
   @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
   offset?: number;
 }
 
@@ -157,5 +164,6 @@ export class BatchAggregationDto extends AggregationOptionsDto {
     default: false,
   })
   @IsOptional()
+  @IsBoolean()
   includeHistorical?: boolean;
 }
