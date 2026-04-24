@@ -18,7 +18,6 @@ import {
   QuestUpdatedEvent,
   QuestDeletedEvent,
 } from './dto';
-import { withSoftDelete } from '../../common/utils/soft-delete.util';
 import { CacheService } from '../cache/cache.service';
 import { CACHE_KEYS, CACHE_TTL } from '../../config/cache.config';
 
