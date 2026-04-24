@@ -122,11 +122,14 @@ function hasApiErrorResponse(error: AxiosError): error is AxiosError<ApiErrorRes
 
 function transformAxiosError(error: unknown): AppError {
   if (!isAxiosError(error)) {
-    // Non-Axios error - handle without type assertions
+    // Non-Axios error
     let errorMessage = 'An unexpected error occurred';
     
-    // Handle string errors
-    if (typeof error === 'string') {
+    if (error && typeof error === 'object') {
+      if ('message' in error) {
+        errorMessage = String((error as { message: unknown }).message);
+      }
+    } else if (typeof error === 'string') {
       errorMessage = error;
     }
     
