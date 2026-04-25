@@ -40,6 +40,12 @@ pub enum Error {
     InvalidAddress = 65,
     QuestExpired = 66,
     QuestNotActive = 67,
+    /// Deadline is too soon after registration (below MIN_DEADLINE_DURATION).
+    /// Prevents single-ledger timestamp nudging attacks.
+    DeadlineTooSoon = 68,
+    /// Deadline is too far in the future (above MAX_DEADLINE_DURATION).
+    /// Prevents indefinite escrow lock-up.
+    DeadlineTooFar = 69,
 
     InsufficientEscrow = 70,
     EscrowNotFound = 71,

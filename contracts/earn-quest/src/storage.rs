@@ -1,5 +1,5 @@
 use crate::errors::Error;
-use crate::types::{Quest, QuestStatus, Submission, SubmissionStatus, UserStats, EscrowInfo, QuestMetadata, PlatformStats, CreatorStats};
+use crate::types::{Quest, QuestStatus, Submission, SubmissionStatus, UserStats, EscrowInfo, QuestMetadata, PlatformStats, CreatorStats, OracleConfig};
 use crate::validation;
 use soroban_sdk::{contracttype, Address, Env, Symbol, Vec, String};
 
@@ -45,6 +45,10 @@ pub enum DataKey {
     QuestIds,
     PlatformStats,
     CreatorStats(Address),
+    /// Oracle configuration, keyed by oracle address
+    OracleConfig(Address),
+    /// List of all oracle addresses
+    OracleAddresses,
     /// Mutex flag set while a non-reentrant entry point is executing.
     ReentrancyGuard,
     /// Dispute record keyed by (quest_id, initiator)

@@ -293,10 +293,9 @@ pub fn expire_quest(env: &Env, quest_id: &Symbol, caller: &Address) -> Result<i1
         return Err(Error::QuestNotActive);
     }
 
-    // Quest deadline must have passed
-    let current_time = env.ledger().timestamp();
-    if current_time < quest.deadline {
-        return Err(Error::QuestNotActive); // Not yet expired
+    // Quest deadline must have passed (with expiry buffer to absorb clock drift)
+    if !validation::is_quest_expired(env, quest.deadline) {
+        return Err(Error::QuestNotActive); // Not yet definitively expired
     }
 
     // Validate the status transition
