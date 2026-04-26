@@ -31,6 +31,7 @@ import { TracingMiddleware } from './common/tracing/tracing.middleware';
 import { CacheModule } from './modules/cache/cache.module';
 import { HealthModule } from './modules/health/health.module';
 import { throttlerConfig } from './config/throttler.config';
+import { PerUserRateLimitConfigService } from './config/per-user-rate-limit.config';
 import { AppThrottlerGuard } from './common/guards/throttler.guard';
 import { EventsModule } from './events/events.module';
 import { SecurityMiddleware } from './common/middleware/security.middleware';
@@ -72,7 +73,7 @@ import { CsrfGuard } from './common/guards/csrf.guard';
   controllers: [AppController],
   providers: [
     AppService,
-    SecurityMiddleware,
+    PerUserRateLimitConfigService,
     {
       provide: APP_GUARD,
       useClass: AppThrottlerGuard,

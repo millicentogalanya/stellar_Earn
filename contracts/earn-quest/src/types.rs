@@ -1,30 +1,4 @@
-/// # Data Structure Size Optimization — Issue #276
-///
-/// ## Problem
-/// Large structs serialized as a single Soroban storage entry waste gas on
-/// every read/write because the *entire* blob is loaded even when only one
-/// field is needed.  Key offenders:
-///
-/// | Struct          | Fields | Problem                                      |
-/// |-----------------|--------|----------------------------------------------|
-/// | `EscrowInfo`    | 9      | `quest_id`/`depositor` duplicated in key;    |
-/// |                 |        | 3×i128 always loaded for balance checks      |
-/// | `QuestMetadata` | 5      | `Vec<String>` tags/requirements unbounded    |
-/// | `UserStats`     | 4      | `Vec<Badge>` grows unbounded, loaded for XP  |
-/// | `PlatformStats` | 5      | All counters rewritten for single increment  |
-///
-/// ## Solution — Split by access pattern (hot / cold)
-///
-/// Each large struct is split into:
-///   - A **core** (hot-path) struct containing only the fields touched on
-///     every transaction.  Stored under the original key for backward compat.
-///   - An **extended** (cold-path) struct containing rarely-read fields.
-///     Stored under a new key, loaded only when explicitly requested.
-///
-/// Original structs are kept as **type aliases** so existing call-sites
-/// continue to compile without changes.
-
-use soroban_sdk::{contracttype, Address, BytesN, String, Symbol, Vec};
+use soroban_sdk::{contracttype, Address, BytesN, String, Symbol, Vec, U256};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Quest
@@ -100,8 +74,26 @@ pub enum SubmissionStatus {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct UserCore {
-    /// Total experience points earned
+pub enum DisputeStatus {
+    Pending,
+    UnderReview,
+    Resolved,
+    Withdrawn,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Dispute {
+    pub quest_id: Symbol,
+    pub initiator: Address,
+    pub arbitrator: Address,
+    pub status: DisputeStatus,
+    pub filed_at: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UserStats {
     pub xp: u64,
     /// Current user level (1–5)
     pub level: u32,
@@ -296,36 +288,70 @@ pub struct PlatformStats {
     pub total_rewards_claimed: u64,
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CreatorStats — kept as-is (4 scalar fields, no Vec, acceptable size)
-// ─────────────────────────────────────────────────────────────────────────────
+//================================================================================
+// Oracle Types and Interface
+//================================================================================
 
+/// Price data from an oracle
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct CreatorStats {
-    pub quests_created: u64,
-    pub total_rewards_posted: u128,
-    pub total_submissions_received: u64,
-    pub total_claims_paid: u64,
+pub struct PriceData {
+    pub base_asset: Address,
+    pub quote_asset: Address,
+    pub price: U256,
+    pub decimals: u32,
+    pub timestamp: u64,
+    pub confidence: u32, // 0-100 percentage confidence score
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Batch input types (already lean, no changes needed)
-// ─────────────────────────────────────────────────────────────────────────────
-
+/// Oracle provider types
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct BatchQuestInput {
-    pub id: Symbol,
-    pub reward_asset: Address,
-    pub reward_amount: i128,
-    pub verifier: Address,
-    pub deadline: u64,
+pub enum OracleType {
+    StellarAsset,
+    StellarOracle,
+    Custom,
 }
 
+/// Oracle configuration
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct BatchApprovalInput {
-    pub quest_id: Symbol,
-    pub submitter: Address,
+pub struct OracleConfig {
+    pub oracle_address: Address,
+    pub oracle_type: OracleType,
+    pub max_age_seconds: u64,
+    pub min_confidence: u32,
+    pub is_active: bool,
+}
+
+/// Price feed request
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PriceFeedRequest {
+    pub base_asset: Address,
+    pub quote_asset: Address,
+    pub max_age_seconds: u64,
+}
+
+/// Oracle response wrapper
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OracleResponse {
+    pub price_data: PriceData,
+    pub oracle_address: Address,
+    pub response_timestamp: u64,
+}
+
+/// Oracle aggregation result for multiple sources
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AggregatedPrice {
+    pub base_asset: Address,
+    pub quote_asset: Address,
+    pub weighted_price: U256,
+    pub decimals: u32,
+    pub sources_used: u32,
+    pub total_sources: u32,
+    pub confidence_score: u32,
+    pub timestamp: u64,
 }

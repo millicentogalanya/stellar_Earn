@@ -193,8 +193,13 @@ pub fn cancel_quest(env: &Env, quest_id: &Symbol, caller: &Address) -> Result<i1
         return Err(Error::QuestNotActive);
     }
     validation::validate_quest_status_transition(&quest.status, &QuestStatus::Cancelled)?;
-    storage::update_quest_status(env, quest_id, QuestStatus::Cancelled)?;
 
+    // Update quest status directly to avoid extra read
+    let mut quest = quest;
+    quest.status = QuestStatus::Cancelled;
+    storage::set_quest(env, quest_id, &quest);
+
+    // Refund escrow if it exists (uses a single read inside refund_remaining)
     let refunded = if storage::has_escrow(env, quest_id) {
         refund_remaining(env, quest_id)?
     } else {
@@ -214,11 +219,17 @@ pub fn expire_quest(env: &Env, quest_id: &Symbol, caller: &Address) -> Result<i1
     if validation::is_quest_terminal(&quest.status) {
         return Err(Error::QuestNotActive);
     }
+
+    // Quest deadline must have passed (with expiry buffer to absorb clock drift)
     if !validation::is_quest_expired(env, quest.deadline) {
-        return Err(Error::QuestNotActive);
+        return Err(Error::QuestNotActive); // Not yet definitively expired
     }
     validation::validate_quest_status_transition(&quest.status, &QuestStatus::Expired)?;
-    storage::update_quest_status(env, quest_id, QuestStatus::Expired)?;
+
+    // Update quest status directly to avoid extra read
+    let mut quest = quest;
+    quest.status = QuestStatus::Expired;
+    storage::set_quest(env, quest_id, &quest);
 
     let refunded = if storage::has_escrow(env, quest_id) {
         refund_remaining(env, quest_id)?
@@ -238,16 +249,16 @@ pub fn withdraw_unclaimed(env: &Env, quest_id: &Symbol, caller: &Address) -> Res
     if !validation::is_quest_terminal(&quest.status) {
         return Err(Error::QuestNotTerminal);
     }
-    if !storage::has_escrow(env, quest_id) {
-        return Err(Error::EscrowNotFound);
-    }
 
-    let b = storage::get_escrow_balances(env, quest_id)?;
-    let available = b.total_deposited - b.total_paid_out - b.total_refunded;
+    // Optimized: Single escrow read checks existence and balance together
+    let escrow = storage::get_escrow(env, quest_id)?;
+
+    let available = escrow.total_deposited - escrow.total_paid_out - escrow.total_refunded;
     if available <= 0 {
         return Err(Error::NoFundsToWithdraw);
     }
 
+    // Continue with refund; refund_remaining will re-read escrow (required for mutability)
     refund_remaining(env, quest_id)
 }
 
