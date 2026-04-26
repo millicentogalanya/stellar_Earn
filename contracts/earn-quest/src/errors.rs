@@ -51,4 +51,7 @@ pub enum Error {
 
     // Reentrancy
     ReentrantCall = 80,
+
+    // Array Bounds Errors
+    IndexOutOfBounds = 90,
 }

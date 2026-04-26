@@ -147,7 +147,7 @@ pub fn approve_submissions_batch(
     
     // Optimized: Pre-validate all addresses to fail fast
     for i in 0u32..len {
-        let s = submissions.get(i).unwrap();
+        let s = submissions.get(i).ok_or(Error::IndexOutOfBounds)?;
         validation::validate_addresses_distinct(verifier, &s.submitter)?;
     }
 
@@ -156,7 +156,7 @@ pub fn approve_submissions_batch(
     let mut cached_quest_data: Option<crate::types::Quest> = None;
 
     for i in 0u32..len {
-        let s = submissions.get(i).unwrap();
+        let s = submissions.get(i).ok_or(Error::IndexOutOfBounds)?;
         
         // Optimized: Reuse quest data if same quest as previous iteration
         let quest = if cached_quest_id.as_ref() == Some(&s.quest_id) {

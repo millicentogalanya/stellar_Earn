@@ -84,7 +84,7 @@ pub fn register_quests_batch(
     validation::validate_batch_quest_size(len)?;
 
     for i in 0u32..len {
-        let q = quests.get(i).unwrap();
+        let q = quests.get(i).ok_or(Error::IndexOutOfBounds)?;
         register_quest(
             env,
             &q.id,
@@ -160,13 +160,15 @@ fn validate_metadata(metadata: &QuestMetadata) -> Result<(), Error> {
 
     validation::validate_array_length(metadata.tags.len(), MAX_METADATA_TAGS)?;
     for i in 0..metadata.tags.len() {
-        validate_string_len(&metadata.tags.get(i).unwrap(), MAX_METADATA_TAG_LEN)?;
+        let tag = metadata.tags.get(i).ok_or(Error::IndexOutOfBounds)?;
+        validate_string_len(&tag, MAX_METADATA_TAG_LEN)?;
     }
 
     validation::validate_array_length(metadata.requirements.len(), MAX_METADATA_REQUIREMENTS)?;
     for i in 0..metadata.requirements.len() {
+        let requirement = metadata.requirements.get(i).ok_or(Error::IndexOutOfBounds)?;
         validate_string_len(
-            &metadata.requirements.get(i).unwrap(),
+            &requirement,
             MAX_METADATA_REQUIREMENT_LEN,
         )?;
     }
@@ -205,16 +207,18 @@ pub fn get_quests_by_status(
         if i >= validation::MAX_SCAN_ITERATIONS || count >= limit {
             break;
         }
-        let id = ids.get(i).unwrap();
-        // Optimized: use has_quest first (cheaper) before full read
-        if storage::has_quest(env, &id) {
-            if let Ok(quest) = storage::get_quest(env, &id) {
-                if &quest.status == status {
-                    if matched >= offset {
-                        results.push_back(quest);
-                        count += 1;
+        // Bounds check before accessing
+        if let Some(id) = ids.get(i) {
+            // Optimized: use has_quest first (cheaper) before full read
+            if storage::has_quest(env, &id) {
+                if let Ok(quest) = storage::get_quest(env, &id) {
+                    if &quest.status == status {
+                        if matched >= offset {
+                            results.push_back(quest);
+                            count += 1;
+                        }
+                        matched += 1;
                     }
-                    matched += 1;
                 }
             }
         }
@@ -239,14 +243,16 @@ pub fn get_quests_by_creator(
         if i >= validation::MAX_SCAN_ITERATIONS || count >= limit {
             break;
         }
-        let id = ids.get(i).unwrap();
-        if let Ok(quest) = storage::get_quest(env, &id) {
-            if &quest.creator == creator {
-                if matched >= offset {
-                    results.push_back(quest);
-                    count += 1;
+        // Bounds check before accessing
+        if let Some(id) = ids.get(i) {
+            if let Ok(quest) = storage::get_quest(env, &id) {
+                if &quest.creator == creator {
+                    if matched >= offset {
+                        results.push_back(quest);
+                        count += 1;
+                    }
+                    matched += 1;
                 }
-                matched += 1;
             }
         }
     }
@@ -274,14 +280,16 @@ pub fn get_quests_by_reward_range(
         if i >= validation::MAX_SCAN_ITERATIONS || count >= limit {
             break;
         }
-        let id = ids.get(i).unwrap();
-        if let Ok(quest) = storage::get_quest(env, &id) {
-            if quest.reward_amount >= min_reward && quest.reward_amount <= max_reward {
-                if matched >= offset {
-                    results.push_back(quest);
-                    count += 1;
+        // Bounds check before accessing
+        if let Some(id) = ids.get(i) {
+            if let Ok(quest) = storage::get_quest(env, &id) {
+                if quest.reward_amount >= min_reward && quest.reward_amount <= max_reward {
+                    if matched >= offset {
+                        results.push_back(quest);
+                        count += 1;
+                    }
+                    matched += 1;
                 }
-                matched += 1;
             }
         }
     }
