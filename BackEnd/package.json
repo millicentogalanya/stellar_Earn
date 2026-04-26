@@ -27,6 +27,10 @@
     "migration:run": "bun run typeorm -- migration:run",
     "migration:revert": "bun run typeorm -- migration:revert",
     "migration:show": "bun run typeorm -- migration:show",
+    "migration:two-step": "bun run migration:run && bun run migration:test",
+    "migration:rollback:two-step": "ts-node scripts/rollback-migrations.ts",
+    "migration:test": "ts-node scripts/test-migrations.ts",
+    "migration:test:performance": "ts-node scripts/test-migrations.ts performance",
     "schema:sync": "bun run typeorm -- schema:sync",
     "schema:drop": "bun run typeorm -- schema:drop",
     "schema:log": "bun run typeorm -- schema:log"
